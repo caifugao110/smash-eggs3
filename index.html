@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#aee7ff">
+<title>砸金蛋 · 学汉字</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="game.css">
+</head>
+<body>
+
+<!-- ================= 首页 ================= -->
+<div id="screen-home" class="screen sky active">
+  <div class="deco-cloud c1">☁️</div>
+  <div class="deco-cloud c2">☁️</div>
+  <div class="deco-egg e1"></div>
+  <div class="deco-egg e2"></div>
+  <div class="deco-egg e3"></div>
+
+  <button class="icon-btn settings-btn" id="btn-settings" aria-label="设置">⚙️</button>
+
+  <main class="home-inner">
+    <div class="hero">
+      <div class="hero-egg"><span class="kai">字</span><i class="hero-shine"></i></div>
+      <div class="hero-hammer">🔨</div>
+      <div class="hero-chick">🐣</div>
+    </div>
+
+    <h1 class="game-title">
+      <span class="t1">砸金蛋</span>
+      <span class="t2">学汉字</span>
+    </h1>
+    <p class="tagline">敲一敲 · 认一认 · 听一听</p>
+
+    <button class="btn primary huge start-btn" id="btn-start">开始游戏</button>
+
+    <div class="home-row">
+      <button class="btn ghost home-mini" id="btn-map">🗺️ 关卡地图</button>
+      <button class="btn ghost home-mini" id="btn-album">📚 我的收藏</button>
+    </div>
+
+    <div class="home-info">
+      <span class="info-chip">⭐ <b id="home-stars">0</b> 颗星</span>
+      <span class="info-chip">📖 已学 <b id="home-learned">0</b>/<b id="home-total">200</b> 字</span>
+      <span class="info-chip rank" id="home-rank">🌱 汉字小芽</span>
+    </div>
+
+    <p class="home-tip">适合 3–6 岁 · 建议家长陪伴 · 每次 10 分钟</p>
+  </main>
+</div>
+
+<!-- ================= 关卡地图 ================= -->
+<div id="screen-map" class="screen sky">
+  <header class="page-top">
+    <button class="icon-btn" id="map-back" aria-label="返回首页">←</button>
+    <div class="page-heading">
+      <h2>关卡地图</h2>
+      <p id="map-sub">已解锁 1 / 50</p>
+    </div>
+    <div class="star-chip">⭐ <b id="map-stars">0</b></div>
+  </header>
+
+  <div class="map-body">
+    <div class="level-grid" id="level-grid"></div>
+
+    <button class="review-card" id="btn-review">
+      <span class="rc-icon">🏆</span>
+      <span class="rc-text">
+        <b>复习挑战</b>
+        <small>随机复习学过的汉字</small>
+      </span>
+      <span class="rc-arrow">→</span>
+    </button>
+
+    <p class="map-foot">每关 4 个汉字 · 通关后自动解锁下一关</p>
+  </div>
+</div>
+
+<!-- ================= 游戏 ================= -->
+<div id="screen-game" class="screen sky">
+  <header class="game-top">
+    <button class="icon-btn" id="btn-exit" aria-label="返回地图">←</button>
+    <div class="level-pill" id="level-pill">第 1 关</div>
+    <button class="icon-btn sound-btn" id="btn-sound" aria-label="关闭声音">🔊</button>
+  </header>
+
+  <div class="dots" id="dots"></div>
+
+  <section class="prompt" id="prompt">
+    <div class="prompt-visual" id="prompt-visual"></div>
+    <div class="prompt-info">
+      <div class="prompt-title" id="prompt-title">找一找</div>
+      <div class="prompt-sub" id="prompt-sub"></div>
+    </div>
+    <button class="speak-btn" id="btn-repeat" aria-label="再听一遍">🔊</button>
+  </section>
+
+  <div class="egg-grid" id="egg-grid"></div>
+  <div class="game-bottom-space"></div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<!-- ================= 我的收藏 ================= -->
+<div id="screen-album" class="screen sky">
+  <header class="page-top">
+    <button class="icon-btn" id="album-back" aria-label="返回首页">←</button>
+    <div class="page-heading">
+      <h2>我的收藏</h2>
+      <p id="album-sub">边玩边收集</p>
+    </div>
+    <div class="star-chip">⭐ <b id="album-stars">0</b></div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="hanzi" role="tab">📖 汉字册</button>
+    <button class="tab" data-tab="sticker" role="tab">🏅 奖章墙</button>
+    <button class="tab" data-tab="library" role="tab">🗂️ 字库</button>
+    <button class="tab" data-tab="report" role="tab">📊 报告</button>
+  </div>
+
+  <div class="album-body" id="album-body"></div>
+</div>
+
+<!-- 特效层 / 弹窗层 / 小锤子 -->
+<div id="fx-layer" aria-hidden="true"></div>
+<div id="modal-layer"></div>
+<div id="hammer" aria-hidden="true">🔨</div>
+
+<script src="js/data.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/app.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
