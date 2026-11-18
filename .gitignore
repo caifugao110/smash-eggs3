@@ -25,3 +25,5 @@ Thumbs.db
 *.jpeg
 *.webp
 layout-test.html
+.screenshots/
+.trae-html-share-packages/

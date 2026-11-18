@@ -47,8 +47,8 @@ node server.js
 
 ```text
 index.html          页面结构
-styles.css          基础样式、首页、地图、无障碍
-game.css            游戏页、金蛋、弹窗、收藏、设置、特效
+css/styles.css      基础样式、首页、地图、无障碍
+css/game.css        游戏页、金蛋、弹窗、收藏、设置、特效
 js/data.js          50 关 × 4 字数据
 js/audio.js         Web Audio 音效、背景音乐、自然语音播放与兜底
 js/app.js           存档、导航、地图、收藏、设置、特效
@@ -56,7 +56,6 @@ js/game.js          游戏主流程、砸蛋、汉字卡、结算、复习
 server.js           本地静态服务器、TTS 接口与语音缓存
 start.bat           Windows 一键安装与启动入口
 requirements.txt    自然语音 Python 依赖
-游戏方案.md         完整设计文档
 ```
 
 ## 贡献
