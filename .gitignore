@@ -2,6 +2,10 @@
 node_modules/
 dist/
 build/
+.venv/
+.cache/
+__pycache__/
+*.py[cod]
 
 # Logs
 *.log
@@ -12,6 +16,7 @@ npm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+.trae/
 *.swp
 
 # Local test artifacts

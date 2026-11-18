@@ -1,5 +1,5 @@
 /* ============================================================
-   声音引擎：Web Audio 合成音效 + 轻柔背景音乐 + 中文语音朗读
+   声音引擎：Web Audio 合成音效 + 轻柔背景音乐 + 自然中文语音朗读
    支持音效/音乐/语音分别设置音量与开关
    ============================================================ */
 'use strict';
@@ -13,7 +13,13 @@ let voiceEnabled = true;
 let sfxVolume = 0.85;
 let bgmVolume = 0.35;
 let voiceRate = 0.85;
-let voicePitch = 1.12;
+const VOICE_OPTIONS = [
+  { id: 'zh-CN-YunxiaNeural', label: '云夏 · 真实童声', match: 'Yunxia' },
+  { id: 'zh-CN-XiaoyiNeural', label: '晓伊 · 活泼女声', match: 'Xiaoyi' },
+  { id: 'zh-CN-XiaoxiaoNeural', label: '晓晓 · 温暖女声', match: 'Xiaoxiao' },
+  { id: 'zh-CN-YunxiNeural', label: '云希 · 阳光男声', match: 'Yunxi' }
+];
+let voiceId = VOICE_OPTIONS[0].id;
 
 /* ---------------- 基础音效 ---------------- */
 const Sfx = {
@@ -188,6 +194,11 @@ const Music = {
 /* ---------------- 中文朗读 ---------------- */
 let zhVoices = [];
 let speechTimer = null;
+let speechRequestId = 0;
+let speechController = null;
+let neuralRetryAfter = 0;
+let neuralAudioUrl = null;
+const neuralPlayer = typeof Audio !== 'undefined' ? new Audio() : null;
 
 function refreshVoices() {
   if (!('speechSynthesis' in window)) return;
@@ -207,24 +218,109 @@ if ('speechSynthesis' in window) {
   window.speechSynthesis.onvoiceschanged = refreshVoices;
 }
 
+function clearNeuralAudio() {
+  if (!neuralPlayer) return;
+  neuralPlayer.onended = null;
+  neuralPlayer.onerror = null;
+  neuralPlayer.pause();
+  if (neuralAudioUrl) URL.revokeObjectURL(neuralAudioUrl);
+  neuralAudioUrl = null;
+  neuralPlayer.removeAttribute('src');
+}
+
+function speakWithBrowser(text, rate, requestId) {
+  if (requestId !== speechRequestId || audioMuted || !voiceEnabled || !('speechSynthesis' in window)) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    const selected = VOICE_OPTIONS.find(function (item) { return item.id === voiceId; });
+    const matched = selected && zhVoices.find(function (item) {
+      return (item.name || '').toLowerCase().includes(selected.match.toLowerCase());
+    });
+    u.lang = 'zh-CN';
+    u.rate = typeof rate === 'number' ? rate : voiceRate;
+    u.pitch = 1;
+    u.volume = 1;
+    if (matched || zhVoices.length) u.voice = matched || zhVoices[0];
+    window.speechSynthesis.speak(u);
+  } catch (e) { /* 忽略不支持的环境 */ }
+}
+
+async function speakWithNeural(text, rate, requestId) {
+  const controller = new AbortController();
+  const timeout = setTimeout(function () { controller.abort(); }, 15000);
+  speechController = controller;
+  let blob;
+  try {
+    const response = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: text,
+        voice: voiceId,
+        rate: typeof rate === 'number' ? rate : voiceRate
+      }),
+      signal: controller.signal
+    });
+    if (!response.ok) throw new Error('TTS request failed');
+    const contentType = response.headers.get('Content-Type') || '';
+    if (!contentType.toLowerCase().includes('audio/mpeg')) throw new Error('Invalid audio response');
+    blob = await response.blob();
+    if (!blob.size) throw new Error('Empty audio response');
+  } catch (e) {
+    if (requestId === speechRequestId) {
+      neuralRetryAfter = Date.now() + 30000;
+      speakWithBrowser(text, rate, requestId);
+    }
+    return;
+  } finally {
+    clearTimeout(timeout);
+    if (speechController === controller) speechController = null;
+  }
+
+  if (requestId !== speechRequestId || !neuralPlayer || !blob.size) return;
+  const url = URL.createObjectURL(blob);
+  neuralAudioUrl = url;
+  let playbackFailed = false;
+  const fallback = function () {
+    if (playbackFailed || requestId !== speechRequestId) return;
+    playbackFailed = true;
+    clearNeuralAudio();
+    speakWithBrowser(text, rate, requestId);
+  };
+  neuralPlayer.onended = function () {
+    if (neuralAudioUrl === url) clearNeuralAudio();
+  };
+  neuralPlayer.onerror = fallback;
+  neuralPlayer.src = url;
+  try {
+    await neuralPlayer.play();
+  } catch (e) {
+    fallback();
+  }
+}
+
 function say(text, rate) {
-  if (audioMuted || !voiceEnabled || !('speechSynthesis' in window)) return;
-  if (speechTimer) clearTimeout(speechTimer);
+  if (audioMuted || !voiceEnabled || !text) return;
+  stopSpeaking();
+  const requestId = speechRequestId;
   speechTimer = setTimeout(function () {
-    try {
-      window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'zh-CN';
-      u.rate = rate || voiceRate;
-      u.pitch = voicePitch;
-      u.volume = 1;
-      if (zhVoices.length) u.voice = zhVoices[0];
-      window.speechSynthesis.speak(u);
-    } catch (e) { /* 忽略不支持的环境 */ }
+    speechTimer = null;
+    if (requestId !== speechRequestId) return;
+    const canRequest = (window.location.protocol === 'http:' || window.location.protocol === 'https:') &&
+      typeof fetch !== 'undefined' && typeof AbortController !== 'undefined' && neuralPlayer && Date.now() >= neuralRetryAfter;
+    if (canRequest) speakWithNeural(text, rate, requestId);
+    else speakWithBrowser(text, rate, requestId);
   }, 70);
 }
 
 function stopSpeaking() {
+  speechRequestId++;
+  if (speechController) {
+    speechController.abort();
+    speechController = null;
+  }
+  clearNeuralAudio();
   try {
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   } catch (e) { /* ignore */ }
@@ -261,7 +357,10 @@ function setSoundOptions(opts) {
   if (typeof opts.sfxVolume === 'number') sfxVolume = Math.max(0, Math.min(1, opts.sfxVolume));
   if (typeof opts.bgmVolume === 'number') bgmVolume = Math.max(0, Math.min(1, opts.bgmVolume));
   if (typeof opts.voiceRate === 'number') voiceRate = Math.max(0.5, Math.min(1.3, opts.voiceRate));
-  if (typeof opts.voicePitch === 'number') voicePitch = Math.max(0.7, Math.min(1.5, opts.voicePitch));
+  if (typeof opts.voiceId === 'string' && VOICE_OPTIONS.some(function (item) { return item.id === opts.voiceId; })) {
+    if (voiceId !== opts.voiceId) stopSpeaking();
+    voiceId = opts.voiceId;
+  }
 }
 
 function startAudio() {

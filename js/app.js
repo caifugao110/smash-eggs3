@@ -13,7 +13,7 @@ const DEFAULT_SETTINGS = {
   sfxVolume: 0.85,
   bgmVolume: 0.35,
   voiceRate: 0.85,
-  voicePitch: 1.12,
+  voiceId: 'zh-CN-YunxiaNeural',
   autoSpeak: true,
   // 玩法
   eggCount: 6,
@@ -68,7 +68,8 @@ function normalizeSettings(raw) {
   s.sfxVolume = clamp(s.sfxVolume, 0, 1);
   s.bgmVolume = clamp(s.bgmVolume, 0, 1);
   s.voiceRate = clamp(s.voiceRate, 0.5, 1.3);
-  s.voicePitch = clamp(s.voicePitch, 0.7, 1.5);
+  if (!VOICE_OPTIONS.some(function (item) { return item.id === s.voiceId; })) s.voiceId = DEFAULT_SETTINGS.voiceId;
+  delete s.voicePitch;
   if ([4, 6, 8].indexOf(s.eggCount) === -1) s.eggCount = 6;
   if ([0, 5, 7, 9, 12].indexOf(s.hintSeconds) === -1) s.hintSeconds = 7;
   if ([0, 1, 2, 3].indexOf(s.wrongHint) === -1) s.wrongHint = 2;
@@ -93,7 +94,7 @@ function applySettings() {
     sfxVolume: s.sfxVolume,
     bgmVolume: s.bgmVolume,
     voiceRate: s.voiceRate,
-    voicePitch: s.voicePitch
+    voiceId: s.voiceId
   });
   document.body.classList.toggle('big-buttons', s.bigButtons);
   document.body.classList.toggle('high-contrast', s.highContrast);
@@ -494,8 +495,9 @@ function openSettings(opts) {
         toggleRow('自动读题', 'set-auto-speak', s.autoSpeak, '进入回合时自动朗读') +
         rangeRow('音效音量', 'set-sfx-vol', Math.round(s.sfxVolume * 100), 0, 100, '%') +
         rangeRow('音乐音量', 'set-bgm-vol', Math.round(s.bgmVolume * 100), 0, 100, '%') +
+        selectRow('朗读音色', 'set-voice-id', s.voiceId, VOICE_OPTIONS.map(function (item) { return [item.id, item.label]; })) +
         rangeRow('朗读语速', 'set-voice-rate', Math.round(s.voiceRate * 100), 50, 130, '%') +
-        rangeRow('声音音调', 'set-voice-pitch', Math.round(s.voicePitch * 100), 70, 150, '%') +
+        '<p class="modal-desc">自然音色首次合成需要联网，异常时使用设备语音</p>' +
       '</section>' +
 
       '<section class="settings-section">' +
@@ -592,11 +594,15 @@ function openSettings(opts) {
   bindSelect('set-hint-time', 'hintSeconds', Number);
   bindSelect('set-wrong-hint', 'wrongHint', Number);
   bindSelect('set-review-count', 'reviewCount', Number);
+  bindSelect('set-voice-id', 'voiceId');
+  const voiceChoice = $('#set-voice-id');
+  if (voiceChoice) voiceChoice.addEventListener('change', function () {
+    say('你好，我们一起学汉字！');
+  });
 
   bindRange('set-sfx-vol', 'sfxVolume', 100, '%');
   bindRange('set-bgm-vol', 'bgmVolume', 100, '%');
   bindRange('set-voice-rate', 'voiceRate', 100, '%');
-  bindRange('set-voice-pitch', 'voicePitch', 100, '%');
 
   let armed = false;
   $('#set-close').onclick = function () {
